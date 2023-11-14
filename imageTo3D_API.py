@@ -1,23 +1,25 @@
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.spatial import Delaunay
 import numpy as np
-from stl import mesh
 from PIL import Image
 import meshio
+from tkinter import filedialog
 
 
 class ImageTo3D:
     def __init__(self, image_path, reduction_factor=10, extrudeScale=5):
+        if reduction_factor is None:
+            reduction_factor = self.reccomendedReduction()
         self.image_path = image_path
         self.reduction_factor = reduction_factor
         self.extrudeScale = extrudeScale/25
+        # Open the image and convert to black and white
+        self.image = Image.open(self.image_path)
+        self.image.convert("RGB")
+        self.image_bw = self.image.convert('L')
 
     def generate_mesh(self):
-        # Open the image and convert to black and white
-        image = Image.open(self.image_path)
-        image.convert("RGB")
-        image_bw = image.convert('L')
+        image = self.image
+        image_bw = self.image_bw
         if image.width//self.reduction_factor < 3 or image.height//self.reduction_factor < 3:
             print("Image too small, decrease reduction_factor")
             return
@@ -31,6 +33,8 @@ class ImageTo3D:
 
 
         # Makes a list of points based on x, y and z, scaled to look better
+        if image_bw.width > 1000 and image_bw.height > 1000:
+            points = np.column_stack((x, y, z*(self.extrudeScale)))
         points = np.column_stack((x*5, y*5, z*(self.extrudeScale))) 
 
         with open("points.txt", "w") as f:
@@ -60,15 +64,18 @@ class ImageTo3D:
         #TODO make an algorithm that makes the faces based on the points
         #husk, for å finne trekanten er det punkt i, i+1, i+width
 
-        for i in range(image_bw.height-1):
-            for j in range(image_bw.width-1):
-                faces[i*2+j] = [i*image_bw.width+j, i*image_bw.width+j+1, (i+1)*image_bw.width+j]
-                faces[i*2+j+1] = [(i+1)*image_bw.width+j, i*image_bw.width+j+1, (i+1)*image_bw.width+j+1]
+        faces = []
+        for i in range(image_bw.height - 1):
+            for j in range(image_bw.width - 1):
+                # First triangle
+                faces.append([i * image_bw.width + j, (i + 1) * image_bw.width + j, i * image_bw.width + j + 1])
+
+                # Second triangle
+                faces.append([(i + 1) * image_bw.width + j, (i + 1) * image_bw.width + j + 1, i * image_bw.width + j + 1])
+
         faces = np.array(faces)
-        print(faces)
-        print(image_bw.width, image_bw.height)
         mesh = meshio.Mesh(points=points, cells=[("triangle", faces)])
-        meshio.write("output.stl", mesh)
+        return mesh
 
         # # Create a mesh using meshio
         # mesh = meshio.Mesh(points=vertices, cells=[("triangle", np.array(faces))])
@@ -82,48 +89,41 @@ class ImageTo3D:
 
 
 
-    def export_mesh(self, mesh_data, filename):
-        # Save the mesh as an STL file
-        mesh_data.save(filename)
+    def export_mesh(self, filename, mesh):
+        meshio.write("output.stl", mesh)
 
         print(f"3D model exported to {filename}")
+    
+    def reccomendedReduction(self):
+        width = self.image.width
+        height = self.image.height
+        return 1000/(width*height)
+
+def upload_file():
+    #lets the user upload an image, and returns the path to the image
+    f_types = [('PNG Files', '*.png'),('JPG Files', '*.jpg')]
+    filename = filedialog.askopenfilename(filetypes=f_types)
+    return filename
+def savefile():
+    #lets the user save the file
+    f_types = [('STL Files', '*.stl')]
+    filename = filedialog.asksaveasfilename(filetypes=f_types)
+    return filename
+
 image = Image.open("C:\Bilder\Cursed\Screenshot_20221215-015400_Instagram.jpg")
 
 if __name__ == "__main__":
-    path="ikon.png"
-    path="C:\Bilder\Cursed\sample_a033837ed4d8eee931e9a725dbd07c34.jpg"
-    path="C:\Bilder\Cursed\RDT_20210820_0810126969680436670274982.jpg"
+    # path="C:\Bilder\Cursed\sample_a033837ed4d8eee931e9a725dbd07c34.jpg"
+    # path="ikon.png"
+    #path="C:\Bilder\Cursed\RDT_20210820_0810126969680436670274982.jpg"
+    path="C:\Bilder\Cursed\Screenshot_20230409-234115_Instagram.jpg"
+    path=upload_file()
     imageTo3D = ImageTo3D(path, reduction_factor=10,extrudeScale=10)
     mesh_data = imageTo3D.generate_mesh()
+    filename = savefile()
+    imageTo3D.export_mesh(filename, mesh_data)
 
 
-    #imageTo3D.export_mesh(mesh_data, "output.stl")
 
-
-
-# import meshio
-# import numpy as np
-
-# # Define the vertices of a cube
-# vertices = np.array([
-#     [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],  # Bottom face
-#     [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]   # Top face
-# ])
-
-# # Define the six faces of the cube using vertex indices
-# faces = [
-#     [0, 1, 5], [0, 5, 4],
-#     [1, 2, 6], [1, 6, 5],
-#     [2, 3, 7], [2, 7, 6],
-#     [3, 0, 4], [3, 4, 7],
-#     [0, 3, 2], [0, 2, 1],
-#     [4, 5, 6], [4, 6, 7]
-# ]
-
-# # Create a mesh using meshio
-# mesh = meshio.Mesh(points=vertices, cells=[("triangle", np.array(faces))])
-
-# # Save the mesh as an STL file
-# meshio.write("cube.stl", mesh)
 
 
