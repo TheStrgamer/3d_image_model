@@ -48,7 +48,7 @@ class ImageTo3D:
 
     def generate_mesh(self):
         image = self.image
-        image_bw = self.image_bw
+        image_bw = self.image_bw.transpose(Image.FLIP_LEFT_RIGHT)
         if image.width//self.reduction_factor < 3 or image.height//self.reduction_factor < 3:
             print("Image too small, decrease reduction_factor")
             return
@@ -148,7 +148,7 @@ class ImageTo3D:
 
 if __name__ == "__main__":
     inv=True
-    imageTo3D = ImageTo3D(reduction_factor=30,extrudeScale=1,inverse=inv)
+    imageTo3D = ImageTo3D(reduction_factor=4,extrudeScale=2,inverse=inv)
     mesh_data = imageTo3D.generate_mesh()
     imageTo3D.export_mesh(mesh_data)
 
