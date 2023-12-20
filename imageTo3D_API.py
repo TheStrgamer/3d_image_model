@@ -11,30 +11,21 @@ class ImageTo3D:
             reduction_factor = self.reccomendedReduction()
         self.image_path = image_path
 
-        if image_path is None:
-            self.upload_file()
-        self.reduction_factor = reduction_factor
-        self.extrudeScale = extrudeScale/25
-        # Open the image and convert to black and white
-        try:
-            self.image = Image.open(self.image_path)
-        except:
-            print("Invalid file path")
-            return
-        self.image.convert("RGB")
-        self.image_bw = self.image.convert('L')
-        
+
         self.mesh=None
         self.inverse=inverse
         self.bottomWidth=10*extrudeScale/25
     def new_image(self, image_path=None, reduction_factor=None, extrudeScale=None,inverse=False):
-        if reduction_factor is None:
-            reduction_factor = self.reccomendedReduction()
+
         self.image_path = image_path
+        print(self.image_path)
         if image_path is None:
             self.upload_file()
-        self.reduction_factor = reduction_factor
-        self.extrudeScale = extrudeScale/25
+        if reduction_factor is not None:
+            self.reduction_factor = reduction_factor
+        if extrudeScale is not None:
+            self.extrudeScale = extrudeScale/25
+
         # Open the image and convert to black and white
         try:
             self.image = Image.open(self.image_path)
@@ -42,6 +33,8 @@ class ImageTo3D:
             print("Invalid file path")
             return
         self.image.convert("RGB")
+        if reduction_factor is None:
+            reduction_factor = self.reccomendedReduction()
         self.image_bw = self.image.convert('L')
         self.mesh=None
         self.inverse=inverse
@@ -134,11 +127,19 @@ class ImageTo3D:
     def reccomendedReduction(self):
         width = self.image.width
         height = self.image.height
-        return 1000/(width*height)
+        print("Reccomended reduction factor: ",round((width*height)/200000))
+        return round((width*height)/200000)
+
+    def update_reduction_factor(self, reduction_factor):
+        self.reduction_factor = reduction_factor
+    def update_extrude_scale(self, extrudeScale):
+        self.extrudeScale = extrudeScale/25
+    def update_inverse(self,inverse):
+        self.inverse=inverse
 
     def upload_file(self):
         #lets the user upload an image, and returns the path to the image
-        f_types = [('JPG Files', '*.jpg')]
+        f_types = [('JPG Files', '*.jpg'), ('PNG Files', '*.png'), ('JPEG Files', '*.jpeg')]
         self.image_path = filedialog.askopenfilename(filetypes=f_types)
 
     def preview(self):
@@ -148,8 +149,11 @@ class ImageTo3D:
 
 if __name__ == "__main__":
     inv=True
-    imageTo3D = ImageTo3D(reduction_factor=4,extrudeScale=2,inverse=inv)
+    print("Enter the path to the image you want to convert to 3D")
+    imageTo3D = ImageTo3D(reduction_factor=6,extrudeScale=1/2,inverse=inv)
+    imageTo3D.new_image()
     mesh_data = imageTo3D.generate_mesh()
+
     imageTo3D.export_mesh(mesh_data)
 
 
