@@ -3,12 +3,12 @@ import numpy as np
 from PIL import Image
 import meshio
 from tkinter import filedialog
+from tqdm import tqdm
 
 
 class ImageTo3D:
     def __init__(self, image_path=None, reduction_factor=10, extrudeScale=5,inverse=False):
-        if reduction_factor is None:
-            reduction_factor = self.reccomendedReduction()
+
         self.image_path = image_path
 
 
@@ -23,8 +23,10 @@ class ImageTo3D:
             self.upload_file()
         if reduction_factor is not None:
             self.reduction_factor = reduction_factor
+        self.extrudeScale=extrudeScale
         if extrudeScale is not None:
             self.extrudeScale = extrudeScale/25
+        print(self.extrudeScale)
 
         # Open the image and convert to black and white
         try:
@@ -34,10 +36,11 @@ class ImageTo3D:
             return
         self.image.convert("RGB")
         if reduction_factor is None:
-            reduction_factor = self.reccomendedReduction()
+            self.reduction_factor = self.reccomendedReduction()
         self.image_bw = self.image.convert('L')
         self.mesh=None
         self.inverse=inverse
+        
 
     def generate_mesh(self):
         image = self.image
@@ -64,7 +67,8 @@ class ImageTo3D:
 
         verticiesCount = len(points)
         faces = []
-        for i in range(image_bw.height - 1):
+
+        for i in tqdm(range(image_bw.height - 1)):
             for j in range(image_bw.width - 1):
                 # First triangle
                 faces.append([i * image_bw.width + j + 1, (i + 1) * image_bw.width + j, i * image_bw.width + j])
@@ -74,12 +78,12 @@ class ImageTo3D:
         
         bottom_points = np.column_stack((x*mod, y*mod, np.zeros_like(z)))
         # Combine top and bottom plane vertices
-        points = np.vstack((points, bottom_points))
+        points = np.concatenate((points, bottom_points))
 
         # Add bottom plane faces
         bottom_faces = []
         bottom_offset = len(points) - len(bottom_points)
-        for i in range(image_bw.height - 1):
+        for i in tqdm(range(image_bw.height - 1)):
             for j in range(image_bw.width - 1):
                 # Bottom plane
                 bottom_faces.append([i * image_bw.width + j + bottom_offset, 
@@ -90,16 +94,15 @@ class ImageTo3D:
                                      (i + 1) * image_bw.width + j + 1 + bottom_offset, 
                                      i * image_bw.width + j + 1 + bottom_offset])
 
-        bottom_faces = np.array(bottom_faces)
 
-        for i in range(image_bw.height - 1):
+        for i in tqdm(range(image_bw.height - 1)):
             #left faces
             faces.append([i * image_bw.width, i * image_bw.width + verticiesCount, (i + 1) * image_bw.width])
             faces.append([(i + 1) * image_bw.width, i * image_bw.width + verticiesCount, (i + 1) * image_bw.width + verticiesCount])
             #right faces
             faces.append([i * image_bw.width + image_bw.width - 1, i * image_bw.width + image_bw.width - 1 + verticiesCount, (i + 1) * image_bw.width + image_bw.width - 1])
             faces.append([(i + 1) * image_bw.width + image_bw.width - 1, i * image_bw.width + image_bw.width - 1 + verticiesCount, (i + 1) * image_bw.width + image_bw.width - 1 + verticiesCount])
-        for i in range(image_bw.width - 1):
+        for i in tqdm(range(image_bw.width - 1)):
             #top faces
             faces.append([i, i + 1, i + verticiesCount])
             faces.append([i + 1, i + 1 + verticiesCount, i + verticiesCount])
@@ -107,7 +110,7 @@ class ImageTo3D:
             faces.append([i + image_bw.width * (image_bw.height - 1), i + image_bw.width * (image_bw.height - 1) + verticiesCount, i + 1 + image_bw.width * (image_bw.height - 1)])
             faces.append([i + 1 + image_bw.width * (image_bw.height - 1), i + image_bw.width * (image_bw.height - 1) + verticiesCount, i + 1 + verticiesCount + image_bw.width * (image_bw.height - 1)])
         # Combine top and bottom plane faces
-        faces = np.vstack((faces, bottom_faces))
+        faces = np.concatenate((faces, bottom_faces))
         
         faces = np.array(faces)
 
@@ -150,8 +153,8 @@ class ImageTo3D:
 if __name__ == "__main__":
     inv=True
     print("Enter the path to the image you want to convert to 3D")
-    imageTo3D = ImageTo3D(reduction_factor=6,extrudeScale=1/2,inverse=inv)
-    imageTo3D.new_image()
+    imageTo3D = ImageTo3D(reduction_factor=1,extrudeScale=100,inverse=False)
+    imageTo3D.new_image(reduction_factor=1,extrudeScale=100,inverse=False)
     mesh_data = imageTo3D.generate_mesh()
 
     imageTo3D.export_mesh(mesh_data)
