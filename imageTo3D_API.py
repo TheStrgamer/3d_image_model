@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 class ImageTo3D:
-    def __init__(self, image_path=None, reduction_factor=10, extrudeScale=5,inverse=False):
+    def __init__(self, image_path=None, reduction_factor=None, extrudeScale=5,inverse=False):
 
         self.image_path = image_path
 
@@ -21,7 +21,7 @@ class ImageTo3D:
         print(self.image_path)
         if image_path is None:
             self.upload_file()
-        if reduction_factor is not None:
+        if reduction_factor is not None and reduction_factor >= 1:
             self.reduction_factor = reduction_factor
         self.extrudeScale=extrudeScale
         if extrudeScale is not None:
@@ -153,8 +153,8 @@ class ImageTo3D:
 if __name__ == "__main__":
     inv=True
     print("Enter the path to the image you want to convert to 3D")
-    imageTo3D = ImageTo3D(reduction_factor=1,extrudeScale=100,inverse=False)
-    imageTo3D.new_image(reduction_factor=1,extrudeScale=100,inverse=False)
+    imageTo3D = ImageTo3D(reduction_factor=1,extrudeScale=1,inverse=False)
+    imageTo3D.new_image(reduction_factor=1,extrudeScale=1,inverse=False)
     mesh_data = imageTo3D.generate_mesh()
 
     imageTo3D.export_mesh(mesh_data)

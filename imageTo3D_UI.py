@@ -46,6 +46,9 @@ class ImageTo3D_UI:
 
     def upload_file(self):
         self.ImageTo3D.upload_file()
+        if self.ImageTo3D.image_path is None:
+            print("No file selected")
+            return
         self.image_path = self.ImageTo3D.image_path
         self.ImageTo3D.new_image(image_path=self.image_path)
         self.preview_image()
@@ -60,7 +63,12 @@ class ImageTo3D_UI:
 
     def genereate_mesh(self):
         reduction_factor = int(self.reduction_factor_entry.get())
+        if reduction_factor is None or reduction_factor < 1:
+            print("Invalid reduction factor, setting to 1")
+            return
         extrude_scale = float(self.extrude_scale_entry.get())
+        if extrude_scale is None or extrude_scale < 0:
+            extrude_scale = 1/2
         inverse = self.inverse_var.get()
         if reduction_factor is None:
             reduction_factor = 10
